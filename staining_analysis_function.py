@@ -119,3 +119,5 @@ def openimage(fname):
             except:
                 print ('could not count for field / z-slice ' + str(field_n)+' / '+ str(zslice))
 
+# Copyright © Apostolos Mikroulis and Lund University, 2020
+# This software is distributed under the terms of the GNU General Public License v3.
