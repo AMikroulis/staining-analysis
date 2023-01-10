@@ -41,25 +41,25 @@ def openimage(fname):
 
     nd2_img_data = npy.reshape(nd2_img_data,[fields,zslices,slice_chan,slice_x,slice_y])
     def dapi(v,z):
-        return(nd2_img_data[v,z,0])
+        return(nd2_img_data[v,z,0]) #DAPI channel at c=0 - change accordingly
     def staining(v,z):
-        return(nd2_img_data[v,z,1])
+        return(nd2_img_data[v,z,1]) #staining channel at c=1 - change accordingly
 
     def analyse(field,zslice):
         print('v = ' + str(field))
         print('z = ' + str(zslice))
         dapi_f = ssy.medfilt2d(dapi(field,zslice),25)
-        dapi_fL = ndi.gaussian_laplace(dapi_f,15,mode = 'nearest')
+        dapi_fL = ndi.gaussian_laplace(dapi_f,15,mode = 'nearest') #laplace-gaussian filter for hard edge detection (frame edges)
         print('dapi detection...')
-        dapi_d = sks.chan_vese(dapi_f,0.01)
+        dapi_d = sks.chan_vese(dapi_f,0.01) #chan-vese segmentation for entire frame
         print('dapi detection -frame edge correction')
-        dapi_dL = sks.chan_vese(dapi_fL,0.01,1.,1.,0.001,640)
-        dapi_dC = dapi_d*dapi_dL*dapi_f
-        dapi_e = ndi.binary_erosion(dapi_dC, iterations = 10)
+        dapi_dL = sks.chan_vese(dapi_fL,0.01,1.,1.,0.001,640)   #chan-vese segmentation for frame edges
+        dapi_dC = dapi_d*dapi_dL*dapi_f #combine segmentation results
+        dapi_e = ndi.binary_erosion(dapi_dC, iterations = 10)   # reduce overlap between cells
         dapi_distance = ndi.distance_transform_edt(dapi_e)
-        locmax_dapi = peak_local_max(dapi_distance, indices=False, min_distance=25, labels=dapi_e)
+        locmax_dapi = peak_local_max(dapi_distance, indices=False, min_distance=25, labels=dapi_e) #find distinct nucleus centers
         markers = ndi.label(locmax_dapi)[0]
-        labels = watershed(-dapi_distance, markers, mask=dapi_e)
+        labels = watershed(-dapi_distance, markers, mask=dapi_e)    #separate cells by nucleus centers
         regions= skmsr.regionprops(labels)
 
         
@@ -89,7 +89,7 @@ def openimage(fname):
 
         print('counting:')
         print('DAPI...')
-        dapi_c = npy.zeros(len(regions),dtype = 'complex')
+        dapi_c = npy.zeros(len(regions),dtype = 'complex')  #complex for distance calculations
 
         for n in range(len(regions)):
             dapi_c[n] = npy.complex(rgns.T[1][n],rgns.T[0][n])
